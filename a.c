@@ -134,6 +134,7 @@ int main(int argc, char *argv[])
     {
         strcpy(path, "./");
         path[2] = '\0';
+        printf("%s:\n",path);
         display_dir(flag_param, path);
         return 0;
     }
@@ -168,6 +169,7 @@ int main(int argc, char *argv[])
                     display_dir_R(flag_param, path);
                 }
                 else // argv[i]是一个文件
+                    printf("%s:\n",path);
                     display_dir(flag_param, path);
 
                 i++;
@@ -255,114 +257,45 @@ void display_attribute(struct stat buf, char *name, int flag, int color)
             printf("%-8d", buf.st_blocks / 2);
     }
 
-    // 获取并打印文件类型
-    if (S_ISLNK(buf.st_mode))
-    {
-        printf("l");
-    }
-    else if (S_ISREG(buf.st_mode))
-    {
-        printf("-");
-    }
-    else if (S_ISDIR(buf.st_mode))
-    {
-        printf("d");
-    }
-    else if (S_ISCHR(buf.st_mode))
-    {
-        printf("c");
-    }
-    else if (S_ISBLK(buf.st_mode))
-    {
-        printf("b");
-    }
-    else if (S_ISFIFO(buf.st_mode))
-    {
-        printf("f");
-    }
-    else if (S_ISSOCK(buf.st_mode))
-    {
-        printf("s");
-    }
+    // // 获取并打印文件类型
+    int mode = buf.st_mode;
+    if (S_ISDIR(mode))
+        str[0] = 'd'; 
+    if (S_ISCHR(mode))
+        str[0] = 'c'; 
+    if (S_ISBLK(mode))
+        str[0] = 'b'; 
+    if (S_ISLNK(mode))
+        str[0] = 'l'; // 链接文件
+    if (S_ISFIFO(mode))
+        str[0] = 'p'; //*FIFO又称作命名管道，可用于任意两个进程之间的通信。
+    if (S_ISSOCK(mode))
+        str[0] = 's'; //*套接字
 
-    // 获取并打印文件所有者的权限
-    if (buf.st_mode & S_IRUSR)
-    {
-        printf("r");
-    }
-    else
-    {
-        printf("-");
-    }
-    if (buf.st_mode & S_IWUSR)
-    {
-        printf("w");
-    }
-    else
-    {
-        printf("-");
-    }
-    if (buf.st_mode & S_IXUSR)
-    {
-        printf("x");
-    }
-    else
-    {
-        printf("-");
-    }
+    // 3 bits for user
+    if (mode & S_IRUSR)
+        str[1] = 'r';
+    if (mode & S_IWUSR)
+        str[2] = 'w';
+    if (mode & S_IXUSR)
+        str[3] = 'x';
 
-    // 获取并打印与文件所有者同组的用户对该文件的操作权限
-    if (buf.st_mode & S_IRGRP)
-    {
-        printf("r");
-    }
-    else
-    {
-        printf("-");
-    }
-    if (buf.st_mode & S_IWGRP)
-    {
-        printf("w");
-    }
-    else
-    {
-        printf("-");
-    }
-    if (buf.st_mode & S_IXGRP)
-    {
-        printf("x");
-    }
-    else
-    {
-        printf("-");
-    }
+    // 3 bits for group
+    if (mode & S_IRGRP)
+        str[4] = 'r';
+    if (mode & S_IWGRP)
+        str[5] = 'w';
+    if (mode & S_IXGRP)
+        str[6] = 'x';
 
-    // 获取并打印其他用户对该文件的操作权限
-    if (buf.st_mode & S_IROTH)
-    {
-        printf("r");
-    }
-    else
-    {
-        printf("-");
-    }
-    if (buf.st_mode & S_IWOTH)
-    {
-        printf("w");
-    }
-    else
-    {
-        printf("-");
-    }
-    if (buf.st_mode & S_IXOTH)
-    {
-        printf("x");
-    }
-    else
-    {
-        printf("-");
-    }
-    printf("  ");
+    // 3 bits for other
+    if (mode & S_IROTH)
+        str[7] = 'r';
+    if (mode & S_IWOTH)
+        str[8] = 'w';
+    if (mode & S_IXOTH)
+        str[9] = 'x';
+    printf("%s ",str);
 
     // 根据uid与gid获取文件所有者的用户名与组名
     psd = getpwuid(buf.st_uid);
@@ -499,85 +432,6 @@ void display(int flag, char *pathname)
             display_single(flag, buf, name, color);
         }
     }
-    // }
-    // switch (flag)
-    // {
-    // case PARAM_NONE: printf_name(name, color);
-    //         printf("\n");
-    //     if (name[0] != '.')
-    //         display_single(flag, buf, name, color);
-    //     break;
-
-    // case PARAM_A:
-    //     display_single(flag, buf, name, color);
-    //     break;
-
-    // case PARAM_L:
-    //     if (name[0] != '.')
-    //     {
-    //         display_attribute(buf, name);
-    //         printf_name(name, color);
-    //         printf("\n");
-    //     }
-    //     break;
-    // case PARAM_F:
-    //     if (name[0] != '.')
-    //     {
-    //         display_single(flag, buf, name, color);
-    //         break;
-    //     }
-
-    // case PARAM_i:
-    //     if (name[0] != '.')
-    //     {
-    //         display_single(flag, buf, name, color);
-    //     }
-    //     break;
-
-    // case PARAM_s:
-    //     if (name[0] != '.')
-    //     {
-    //         display_single(flag, buf, name, color);
-    //     }
-    //     break;
-
-    // case PARAM_r:
-    //     if (name[0] != '.')
-    //     {
-    //         display_single(flag, buf, name, color);
-    //         break;
-    //     }
-
-    // case PARAM_R:
-    //     if (name[0] != '.')
-    //     {
-    //         display_single(flag, buf, name, color);
-    //     }
-    //     break;
-
-    // case PARAM_R + PARAM_A:
-    //     display_single(flag, buf, name, color);
-    //     break;
-
-    // case PARAM_L + PARAM_R:
-    //     if (name[0] != '.')
-    //     {
-    //         display_attribute(buf, name);
-    //     }
-    //     break;
-
-    // case PARAM_L + PARAM_A:
-    //     display_attribute(buf, name);
-    //     break;
-
-    // case PARAM_L + PARAM_A + PARAM_R:
-    //     display_attribute(buf, name);
-    //     break;
-
-    // default:
-    //     display_single(flag, buf, name, color);
-    //     break;
-    // }
 }
 void display_dir(int flag_param, char *path)
 {
