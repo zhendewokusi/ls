@@ -47,6 +47,7 @@ char str[12] = "-----------";
 int g_leave_len = MAXROWLEN; // 一行剩余长度，用于输出对齐
 int g_maxlen;                // 存放某目录下最长文件名的长度
 int num = 0;
+char filenames[4096*16][PATH_MAX + 1], temp[PATH_MAX + 1];
 
 void printf_name(char *name, int color); // 带有不同颜色的打印文件名
 int get_color(struct stat buf);          // 不同文件类型得到不同颜色型号
@@ -425,7 +426,7 @@ void display_dir(int flag_param, char *path)
     g_leave_len = 80;
     struct dirent *ptr;
     int count = 0;
-    char filenames[256][PATH_MAX + 1], temp[PATH_MAX + 1];
+    // char filenames[2000][PATH_MAX + 1], temp[PATH_MAX + 1];
     // 获取该目录下文件总数和最长的文件名
     dir = opendir(path);
     if (dir == NULL)
@@ -443,7 +444,7 @@ void display_dir(int flag_param, char *path)
             g_maxlen = strlen(ptr->d_name);
         count++;
     }
-    if (count > 256)
+    if (count > 4096*16)
     {
         printf("too many files under this dir\n");
         exit(0);
