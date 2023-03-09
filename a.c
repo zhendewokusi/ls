@@ -1,3 +1,4 @@
+#include <linux/limits.h>
 #include <stdio.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -48,10 +49,10 @@ int g_leave_len = MAXROWLEN; // 一行剩余长度，用于输出对齐
 int g_maxlen;                // 存放某目录下最长文件名的长度
 int num = 0;
 char filenames[4096*16][PATH_MAX + 1], temp[PATH_MAX + 1];
-
-void printf_name(char *name, int color); // 带有不同颜色的打印文件名
-int get_color(struct stat buf);          // 不同文件类型得到不同颜色型号
-
+// 带有不同颜色的打印文件名
+void printf_name(char *name, int color); 
+// 不同文件类型得到不同颜色型号
+int get_color(struct stat buf);          
 // 为显示某个目录下的文件做准备
 void display_dir(int flag_param, char *path);
 // 递归打开目录
@@ -62,6 +63,8 @@ void display_attribute(struct stat buf, char *name, int, int);
 void display_single(int flag, struct stat buf, char *name, int color);
 // 根据命令行参数flag和完整路径名，显示目标文件
 void display(int flag, char *pathname);
+void display_dir_t(char filenames[4096*16][PATH_MAX+1],int count);
+
 
 int main(int argc, char *argv[])
 {
@@ -425,10 +428,13 @@ void display_dir(int flag_param, char *path)
     DIR *dir;
     g_leave_len = 80;
     struct dirent *ptr;
+    struct stat tem;
     int count = 0;
     // char filenames[2000][PATH_MAX + 1], temp[PATH_MAX + 1];
     // 获取该目录下文件总数和最长的文件名
     dir = opendir(path);
+    
+
     if (dir == NULL)
     {
         // 过滤掉权限不够的错误
@@ -437,6 +443,7 @@ void display_dir(int flag_param, char *path)
         else
             return;
     }
+    
     // 找到最长文件名，并且统计文件个数
     while ((ptr = readdir(dir)) != NULL)
     {
@@ -486,7 +493,10 @@ void display_dir(int flag_param, char *path)
             }
         }
     }
-
+    // char *myls_t(struct stat **temp, int num,char *filenames[])
+    // myls_t(tem,count,filenames);
+    if(PARAM_t & flag_param )
+    display_dir_t(filenames, count);
     if (flag_param & PARAM_r)
     {
         for (i = count - 1; i >= 0; i--)
@@ -590,5 +600,24 @@ void printf_name(char *name, int color)
     else if (color == YELLOW)
     {
         printf("\033[1m\033[33m%-s\033[0m", name);
+    }
+}
+
+
+
+void display_dir_t(char filenames[4096*16][PATH_MAX + 1],int count) {
+    char temp[2048] = {0};
+    struct stat info1;
+    struct stat info2;
+    for (int i = 0; i < count - 1; i++) {
+        for (int j = i + 1; j < count; j++) {
+            stat(filenames[i], &info1);
+            stat(filenames[j], &info2);
+            if (info1.st_mtime < info2.st_mtime) {
+                strcpy(temp, filenames[i]);
+                strcpy(filenames[i], filenames[j]);
+                strcpy(filenames[j], temp);
+            }
+        }
     }
 }
