@@ -46,6 +46,7 @@
 char str[12]="-----------";
 int g_leave_len = MAXROWLEN; // 一行剩余长度，用于输出对齐
 int g_maxlen;                // 存放某目录下最长文件名的长度
+int num = 0;
 
 void printf_name(char *name, int color); // 带有不同颜色的打印文件名
 int get_color(struct stat buf);          // 不同文件类型得到不同颜色型号
@@ -55,7 +56,7 @@ void display_dir(int flag_param, char *path);
 // 递归打开目录
 void display_dir_R(int flag, char *name);
 // 打印名为name的文件信息
-void display_attribute(struct stat buf, char *name);
+void display_attribute(struct stat buf, char *name,int,int);
 // 输出文件的文件名
 void display_single(int flag, struct stat buf, char *name, int color);
 // 根据命令行参数flag和完整路径名，显示目标文件
@@ -65,14 +66,14 @@ int main(int argc, char *argv[])
 {
     signal(SIGINT, SIG_IGN);
     // 屏蔽ctrl+c杀死程序
-    int i, j, k, num;
+    int i, j, k;
     char path[PATH_MAX + 1];
     memset(path, 0, PATH_MAX + 1);
     char param[32];              // 保存命令行参数，目标文件名和目录名不在此列
     int flag_param = PARAM_NONE; // 参数种类，默认为0
     struct stat buf;
     j = 0;
-    num = 0;
+    
     /*--------------------------参数的数字化------------------------------------------*/
     // 对命令行参数进行解析，提取到param数组中
     for (i = 1; i < argc; i++)
@@ -226,11 +227,21 @@ void mode_to_str(struct stat buf,char * str)
     printf(" %s", buf_time);               // 打印文件的时间信息
 
      }
-void display_attribute(struct stat buf, char *name)
+
+
+
+void display_attribute(struct stat buf, char *name,int flag,int color)
 {
     char buf_time[32];
     struct passwd *psd; // 从该结构体中获取文件所有者的用户名
     struct group *grp;  // 从该结构体中获取文件所有者所属组的组名
+    if (flag & PARAM_i || flag & PARAM_s )
+    {
+        if (flag & PARAM_i)
+            printf("%-8d", buf.st_ino);
+        if (flag & PARAM_s)
+            printf("%-8d", buf.st_blocks / 2);
+    }
 
     // 获取并打印文件类型
     if (S_ISLNK(buf.st_mode))
@@ -351,6 +362,9 @@ void display_attribute(struct stat buf, char *name)
     strcpy(buf_time, ctime(&buf.st_mtime));
     buf_time[strlen(buf_time) - 1] = '\0'; // 去掉换行符
     printf(" %s", buf_time);               // 打印文件的时间信息
+    printf(" ");
+    printf_name(name, color);
+    printf("\n");
 }
 
 void display_single(int flag, struct stat buf, char *name, int color)
@@ -358,14 +372,13 @@ void display_single(int flag, struct stat buf, char *name, int color)
     int i, len;
     
     // 判断是否带有i,s参数
-    if (flag & PARAM_i || flag & PARAM_s || flag & PARAM_L)
+    if (flag & PARAM_i || flag & PARAM_s)
     {
         if (flag & PARAM_i)
             printf("%-8d", buf.st_ino);
         if (flag & PARAM_s)
             printf("%-8d", buf.st_blocks / 2);
-        if (flag & PARAM_L)
-            display_attribute(buf, name);
+        
         printf(" ");
         printf_name(name, color);
         printf("\n");
@@ -449,85 +462,95 @@ void display(int flag, char *pathname)
             return;
     }
     int color = get_color(buf);
-
-    switch (flag)
-    {
-    case PARAM_NONE:
-        if (name[0] != '.')
-            display_single(flag, buf, name, color);
-        break;
-
-    case PARAM_A:
-        display_single(flag, buf, name, color);
-        break;
-
-    case PARAM_L:
-        if (name[0] != '.')
-        {
-            display_attribute(buf, name);
-            printf_name(name, color);
-            printf("\n");
+// display(int flag, char *pathname)
+// display(flag_param, filenames[i]);
+    // for(int k=0;k<num;k++){
+        if(flag & PARAM_L){
+            display_attribute(buf, name,flag,color);
+            
         }
-        break;
-
-    case PARAM_F:
-        if (name[0] != '.')
-        {
-            display_single(flag, buf, name, color);
-            break;
-        }
-
-    case PARAM_i:
-        if (name[0] != '.')
-        {
+        else{
             display_single(flag, buf, name, color);
         }
-        break;
+    // }
+    // switch (flag)
+    // {
+    // case PARAM_NONE: printf_name(name, color);
+    //         printf("\n");
+    //     if (name[0] != '.')
+    //         display_single(flag, buf, name, color);
+    //     break;
 
-    case PARAM_s:
-        if (name[0] != '.')
-        {
-            display_single(flag, buf, name, color);
-        }
-        break;
+    // case PARAM_A:
+    //     display_single(flag, buf, name, color);
+    //     break;
 
-    case PARAM_r:
-        if (name[0] != '.')
-        {
-            display_single(flag, buf, name, color);
-            break;
-        }
+    // case PARAM_L:
+    //     if (name[0] != '.')
+    //     {
+    //         display_attribute(buf, name);
+    //         printf_name(name, color);
+    //         printf("\n");
+    //     }
+    //     break;
+    // case PARAM_F:
+    //     if (name[0] != '.')
+    //     {
+    //         display_single(flag, buf, name, color);
+    //         break;
+    //     }
 
-    case PARAM_R:
-        if (name[0] != '.')
-        {
-            display_single(flag, buf, name, color);
-        }
-        break;
+    // case PARAM_i:
+    //     if (name[0] != '.')
+    //     {
+    //         display_single(flag, buf, name, color);
+    //     }
+    //     break;
 
-    case PARAM_R + PARAM_A:
-        display_single(flag, buf, name, color);
-        break;
+    // case PARAM_s:
+    //     if (name[0] != '.')
+    //     {
+    //         display_single(flag, buf, name, color);
+    //     }
+    //     break;
 
-    case PARAM_L + PARAM_R:
-        if (name[0] != '.')
-        {
-            display_attribute(buf, name);
-        }
-        break;
+    // case PARAM_r:
+    //     if (name[0] != '.')
+    //     {
+    //         display_single(flag, buf, name, color);
+    //         break;
+    //     }
 
-    case PARAM_L + PARAM_A:
-        display_attribute(buf, name);
-        break;
+    // case PARAM_R:
+    //     if (name[0] != '.')
+    //     {
+    //         display_single(flag, buf, name, color);
+    //     }
+    //     break;
 
-    case PARAM_L + PARAM_A + PARAM_R:
-        display_attribute(buf, name);
-        break;
+    // case PARAM_R + PARAM_A:
+    //     display_single(flag, buf, name, color);
+    //     break;
 
-    default:
-        display_single(flag, buf, name, color);
-        break;
-    }
+    // case PARAM_L + PARAM_R:
+    //     if (name[0] != '.')
+    //     {
+    //         display_attribute(buf, name);
+    //     }
+    //     break;
+
+    // case PARAM_L + PARAM_A:
+    //     display_attribute(buf, name);
+    //     break;
+
+    // case PARAM_L + PARAM_A + PARAM_R:
+    //     display_attribute(buf, name);
+    //     break;
+
+    // default:
+    //     display_single(flag, buf, name, color);
+    //     break;
+    // }
 }
 void display_dir(int flag_param, char *path)
 {
