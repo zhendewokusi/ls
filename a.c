@@ -43,6 +43,7 @@
 // 设置每行最多的字符数为80
 #define MAXROWLEN 80
 
+char str[12]="-----------";
 int g_leave_len = MAXROWLEN; // 一行剩余长度，用于输出对齐
 int g_maxlen;                // 存放某目录下最长文件名的长度
 
@@ -60,7 +61,6 @@ void display_single(int flag, struct stat buf, char *name, int color);
 // 根据命令行参数flag和完整路径名，显示目标文件
 void display(int flag, char *pathname);
 
-
 int main(int argc, char *argv[])
 {
     signal(SIGINT, SIG_IGN);
@@ -73,7 +73,7 @@ int main(int argc, char *argv[])
     struct stat buf;
     j = 0;
     num = 0;
-/*--------------------------参数的数字化------------------------------------------*/
+    /*--------------------------参数的数字化------------------------------------------*/
     // 对命令行参数进行解析，提取到param数组中
     for (i = 1; i < argc; i++)
     {
@@ -127,7 +127,7 @@ int main(int argc, char *argv[])
         }
     }
     param[j] = '\0';
-/*------------------------------------------------------------------------------*/
+    /*------------------------------------------------------------------------------*/
     // 如果没有输入路径，就设置为当前路径
     if ((num + 1) == argc)
     {
@@ -180,6 +180,52 @@ int main(int argc, char *argv[])
     } while (i < argc);
     return 0;
 }
+
+void mode_to_str(struct stat buf,char * str)
+     {
+    char buf_time[32];
+    struct passwd *psd; // 从该结构体中获取文件所有者的用户名
+    struct group *grp;  // 从该结构体中获取文件所有者所属组的组名
+   /* 普通文件（－）、目录（ｄ）
+      字符设备文件（ｃ）、块设备文件（ｂ）
+      符号链接文件（ｌ）               */
+//if(S_ISREG(mode))  str[0] = '-';
+    int mode = buf.st_mode;
+  if(S_ISDIR(mode))  str[0] = 'd';      //"directory ?"
+	if(S_ISCHR(mode))  str[0] = 'c';      //"char decices"?
+	if(S_ISBLK(mode))  str[0] = 'b';      //block device?
+  if(S_ISLNK(mode))  str[0] = 'l';      //链接文件
+	if(S_ISFIFO(mode)) str[0] = 'p';      //*FIFO又称作命名管道，可用于任意两个进程之间的通信。
+  if(S_ISSOCK(mode)) str[0] = 's';      //*套接字
+	
+	//3 bits for user
+	if(mode&S_IRUSR) str[1] = 'r';
+	if(mode&S_IWUSR) str[2] = 'w';
+	if(mode&S_IXUSR) str[3] = 'x';
+	
+	//3 bits for group
+	if(mode&S_IRGRP) str[4] = 'r';
+	if(mode&S_IWGRP) str[5] = 'w';
+	if(mode&S_IXGRP) str[6] = 'x';
+	
+	//3 bits for other
+	if(mode&S_IROTH) str[7] = 'r';
+	if(mode&S_IWOTH) str[8] = 'w';
+	if(mode&S_IXOTH) str[9] = 'x';
+
+     // 根据uid与gid获取文件所有者的用户名与组名
+    psd = getpwuid(buf.st_uid);
+    grp = getgrgid(buf.st_gid);
+    printf("%s ",str);
+    printf("%4d", buf.st_nlink); // 打印文件的链接数
+    printf("%-8s", psd->pw_name);
+    printf("%-8s", grp->gr_name);
+    printf("%6d", buf.st_size); // 打印文件的大小
+    strcpy(buf_time, ctime(&buf.st_mtime));
+    buf_time[strlen(buf_time) - 1] = '\0'; // 去掉换行符
+    printf(" %s", buf_time);               // 打印文件的时间信息
+
+     }
 void display_attribute(struct stat buf, char *name)
 {
     char buf_time[32];
@@ -307,40 +353,42 @@ void display_attribute(struct stat buf, char *name)
     printf(" %s", buf_time);               // 打印文件的时间信息
 }
 
-
-
-
 void display_single(int flag, struct stat buf, char *name, int color)
 {
     int i, len;
     
-    // 判断是否带有i参数
-    if(flag & PARAM_i)
+    // 判断是否带有i,s参数
+    if (flag & PARAM_i || flag & PARAM_s || flag & PARAM_L)
     {
-        printf("%-8d", buf.st_ino);
+        if (flag & PARAM_i)
+            printf("%-8d", buf.st_ino);
+        if (flag & PARAM_s)
+            printf("%-8d", buf.st_blocks / 2);
+        if (flag & PARAM_L)
+            display_attribute(buf, name);
+        printf(" ");
         printf_name(name, color);
         printf("\n");
     }
 
-    //判断是否带有s参数
-    else if(flag & PARAM_s)
-    {
-        printf("%-8d", buf.st_blocks);
-        printf_name(name, color);
-        printf("\n");
-    }
-    
+    // 判断是否带有s参数
+    //  if(flag & PARAM_s)
+    //  {
+
+    //     printf_name(name, color);
+    //     printf("\n");
+    // }
+
     else
     {
-    /*判断最长的文件名能否在剩余的位置放下*/
-        if (g_leave_len < g_maxlen)/*放不下就下一行*/
+        /*判断最长的文件名能否在剩余的位置放下*/
+        if (g_leave_len < g_maxlen) /*放不下就下一行*/
         {
             printf("\n");
-            g_leave_len = MAXROWLEN;/*转到下一行，下一行的长度初始化*/
+            g_leave_len = MAXROWLEN; /*转到下一行，下一行的长度初始化*/
         }
-        len = g_maxlen - strlen(name);/*剩余长度*/
+        len = g_maxlen - strlen(name); /*剩余长度*/
         printf_name(name, color);
-
 
         // 判断是否带有参数F
         if (flag & PARAM_F)
@@ -402,7 +450,6 @@ void display(int flag, char *pathname)
     }
     int color = get_color(buf);
 
-
     switch (flag)
     {
     case PARAM_NONE:
@@ -418,7 +465,7 @@ void display(int flag, char *pathname)
         if (name[0] != '.')
         {
             display_attribute(buf, name);
-            printf_name(name,color);
+            printf_name(name, color);
             printf("\n");
         }
         break;
@@ -494,7 +541,7 @@ void display_dir(int flag_param, char *path)
     dir = opendir(path);
     if (dir == NULL)
     {
-        // 因为有多层函数调用，所以每一次都要过滤掉权限不够的错误
+        //过滤掉权限不够的错误
         if (errno != 13)
             perror("opendir fail");
         else
@@ -553,11 +600,17 @@ void display_dir(int flag_param, char *path)
     if (flag_param & PARAM_r)
     {
         for (i = count - 1; i >= 0; i--)
+        {
             display(flag_param, filenames[i]);
+        }
     }
     else // 不带参数-r，正序输出
         for (i = 0; i < count; i++)
+        {
+            // if (filenames[i][0] != '.')
+            //     continue;
             display(flag_param, filenames[i]);
+        }
 
     closedir(dir);
 
@@ -565,7 +618,6 @@ void display_dir(int flag_param, char *path)
     if ((flag_param & PARAM_L) == 0)
         printf("\n");
 }
-
 
 void display_dir_R(int flag, char *name)
 {
