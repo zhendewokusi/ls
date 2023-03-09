@@ -159,8 +159,10 @@ int main(int argc, char *argv[])
             strcpy(path, argv[i]);
 
             // 如果目标文件或目录不存在，报错并退出程序
-            if (stat(path, &buf) == -1)
+            if (stat(path, &buf) == -1){
                 perror("stat fail:");
+                exit(1);
+            }
             // 判断该路径是不是目录
             if (S_ISDIR(buf.st_mode))
             {
@@ -387,13 +389,10 @@ void display(int flag, char *pathname)
     name[j] = '\0';
     // 用lstat而不是stat以方便解析链接文件
     if (lstat(pathname, &buf) == -1)
-
     {
-        // 过滤掉权限不够的错误
-        if (errno != 13)
             perror("opendir ");
-        else
-            return;
+            exit(1);
+        
     }
     int color = get_color(buf);
     // display(int flag, char *pathname)
@@ -433,16 +432,12 @@ void display_dir(int flag_param, char *path)
     // char filenames[2000][PATH_MAX + 1], temp[PATH_MAX + 1];
     // 获取该目录下文件总数和最长的文件名
     dir = opendir(path);
+    // if (dir == NULL)
+    // {
+    //         perror("fail:");
+    //         exit(1);
+    // }
     
-
-    if (dir == NULL)
-    {
-        // 过滤掉权限不够的错误
-        if (errno != 13)
-            perror("opendir fail");
-        else
-            return;
-    }
     
     // 找到最长文件名，并且统计文件个数
     while ((ptr = readdir(dir)) != NULL)
