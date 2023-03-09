@@ -1,7 +1,5 @@
 #include <stdio.h>
 #include <stdio.h>
-#include <signal.h>
-// 用来屏蔽Ctrl+c杀死程序
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
@@ -24,21 +22,23 @@
 
 // 命令行参数
 #define PARAM_NONE 0
-
-#define PARAM_A 1
 //-a 显示所有文件
-#define PARAM_L 2
+#define PARAM_A 1
 //-l 一行只显示一个文件的详细信息
-#define PARAM_R 4
+#define PARAM_L 2
 //-R 递归打开目录显示文件
-#define PARAM_r 8
+#define PARAM_R 4
 //-r 倒序显示文件
-#define PARAM_F 16
-//-F 识别文件类型 ，加上标识符
-#define PARAM_i 32
+#define PARAM_r 8
+//-t 按照时间排序
+#define PARAM_t 16
 //-i 查看文件的inode号
+#define PARAM_i 32
+//-s 显示文件大小
 #define PARAM_s 64
-// 显示文件大小
+//-F 识别文件类型 ，加上标识符[暂时未写]
+#define PARAM_F 128
+
 
 // 设置每行最多的字符数为80
 #define MAXROWLEN 80
@@ -64,8 +64,6 @@ void display(int flag, char *pathname);
 
 int main(int argc, char *argv[])
 {
-    signal(SIGINT, SIG_IGN);
-    // 屏蔽ctrl+c杀死程序
     int i, j, k;
     char path[PATH_MAX + 1];
     memset(path, 0, PATH_MAX + 1);
@@ -109,9 +107,9 @@ int main(int argc, char *argv[])
         {
             flag_param |= PARAM_r;
         }
-        else if (param[i] == 'F')
+        else if (param[i] == 't')
         {
-            flag_param |= PARAM_F;
+            flag_param |= PARAM_t;
         }
         else if (param[i] == 'i')
         {
@@ -135,7 +133,12 @@ int main(int argc, char *argv[])
         strcpy(path, "./");
         path[2] = '\0';
         printf("%s:\n",path);
+        if(!(flag_param &PARAM_R))
         display_dir(flag_param, path);
+        else{
+            display_dir_R(flag_param, path);
+
+        }
         return 0;
     }
     i = 1;
@@ -347,24 +350,6 @@ void display_single(int flag, struct stat buf, char *name, int color)
         }
         len = g_maxlen - strlen(name); /*剩余长度*/
         printf_name(name, color);
-
-        // 判断是否带有参数F
-        if (flag & PARAM_F)
-        {
-            // 链接文件在文件名后加@
-            if (S_ISLNK(buf.st_mode))
-                printf("@");
-            // 管道文件后面加|
-            else if (S_ISFIFO(buf.st_mode))
-                printf("|");
-            // 目录后面加/
-            else if (S_ISDIR(buf.st_mode))
-                printf("/");
-            // 套接字后面加=
-            else if (S_ISSOCK(buf.st_mode))
-                printf("=");
-            else
-                printf(" ");
         }
         for (i = 0; i < len; i++)
         {
@@ -373,7 +358,7 @@ void display_single(int flag, struct stat buf, char *name, int color)
         printf("  ");
         g_leave_len -= (g_maxlen + 3);
     }
-}
+
 // 根据命令行参数和完整路径名显示目标文件
 // 参数flag：命令行参数
 // 参数pathname：包含了文件名的路径名
