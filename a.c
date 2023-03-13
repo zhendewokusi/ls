@@ -391,7 +391,8 @@ void display(int flag, char *pathname)
     if (lstat(pathname, &buf) == -1)
     {
             perror("opendir ");
-            exit(1);
+            // exit(1);
+            return;
         
     }
     int color = get_color(buf);
@@ -432,11 +433,12 @@ void display_dir(int flag_param, char *path)
     // char filenames[2000][PATH_MAX + 1], temp[PATH_MAX + 1];
     // 获取该目录下文件总数和最长的文件名
     dir = opendir(path);
-    // if (dir == NULL)
-    // {
-    //         perror("fail:");
-    //         exit(1);
-    // }
+    if (dir == NULL)
+    {
+            perror("fail:");
+            // exit(1);
+            return;
+    }
     
     
     // 找到最长文件名，并且统计文件个数
@@ -527,7 +529,10 @@ void display_dir_R(int flag, char *name)
     if ((dir = opendir(name)) == NULL)
     {
         if (errno != 13)
+        {
             perror("display_R fail:");
+            return;
+        }
 
         else
             return;
