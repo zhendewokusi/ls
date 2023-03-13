@@ -193,66 +193,6 @@ int main(int argc, char *argv[])
     return 0;
 }
 
-void mode_to_str(struct stat buf, char *str)
-{
-    char buf_time[32];
-    struct passwd *psd; // 从该结构体中获取文件所有者的用户名
-    struct group *grp;  // 从该结构体中获取文件所有者所属组的组名
-                        /* 普通文件（－）、目录（ｄ）
-                           字符设备文件（ｃ）、块设备文件（ｂ）
-                           符号链接文件（ｌ）               */
-                        // if(S_ISREG(mode))  str[0] = '-';
-    int mode = buf.st_mode;
-    if (S_ISDIR(mode))
-        str[0] = 'd'; //"directory ?"
-    if (S_ISCHR(mode))
-        str[0] = 'c'; //"char decices"?
-    if (S_ISBLK(mode))
-        str[0] = 'b'; // block device?
-    if (S_ISLNK(mode))
-        str[0] = 'l'; // 链接文件
-    if (S_ISFIFO(mode))
-        str[0] = 'p'; //*FIFO又称作命名管道，可用于任意两个进程之间的通信。
-    if (S_ISSOCK(mode))
-        str[0] = 's'; //*套接字
-
-    // 3 bits for user
-    if (mode & S_IRUSR)
-        str[1] = 'r';
-    if (mode & S_IWUSR)
-        str[2] = 'w';
-    if (mode & S_IXUSR)
-        str[3] = 'x';
-
-    // 3 bits for group
-    if (mode & S_IRGRP)
-        str[4] = 'r';
-    if (mode & S_IWGRP)
-        str[5] = 'w';
-    if (mode & S_IXGRP)
-        str[6] = 'x';
-
-    // 3 bits for other
-    if (mode & S_IROTH)
-        str[7] = 'r';
-    if (mode & S_IWOTH)
-        str[8] = 'w';
-    if (mode & S_IXOTH)
-        str[9] = 'x';
-
-    // 根据uid与gid获取文件所有者的用户名与组名
-    psd = getpwuid(buf.st_uid);
-    grp = getgrgid(buf.st_gid);
-    printf("%s ", str);
-    printf("%4d", buf.st_nlink); // 打印文件的链接数
-    printf("%-8s", psd->pw_name);
-    printf("%-8s", grp->gr_name);
-    printf("%6d", buf.st_size); // 打印文件的大小
-    strcpy(buf_time, ctime(&buf.st_mtime));
-    buf_time[strlen(buf_time) - 1] = '\0'; // 去掉换行符
-    printf(" %s", buf_time);               // 打印文件的时间信息
-}
-
 void display_attribute(struct stat buf, char *name, int flag, int color)
 {
     char buf_time[32];
